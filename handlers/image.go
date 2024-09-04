@@ -48,14 +48,20 @@ func NewGenImage() *GenImage {
 func ImageHandler(c *gin.Context) {
 	gen := NewGenImage()
 	gen.getQuery(c.Request.URL.Query())
-	fmt.Println("json=====>", gen.Params)
-	img := gen.createImage()
-	c.Header("Content-Type", "image/png")
-	err := png.Encode(c.Writer, img)
+	img, err := gen.createImage()
 	if err != nil {
-		c.JSON(201, gin.H{
-			"error": "图片生成异常",
-		})
+		file, _ := os.Open("assets/image/twitter.png")
+		defer file.Close()
+		twitter, _, _ := image.Decode(file)
+		png.Encode(c.Writer, twitter)
+	} else {
+		c.Header("Content-Type", "image/png")
+		err := png.Encode(c.Writer, img)
+		if err != nil {
+			c.JSON(201, gin.H{
+				"error": "图片生成异常",
+			})
+		}
 	}
 	// c.JSON(200, gin.H{
 	// 	"title": "Home",
@@ -63,13 +69,14 @@ func ImageHandler(c *gin.Context) {
 	// })
 }
 
-func (gen *GenImage) getQuery(val url.Values) GenQuery {
+func (gen *GenImage) getQuery(val url.Values) (*GenQuery, error) {
 	// var query GenQuery
 	var res GenQuery
 	jsonStr := val.Get("jsonStr")
 	err := json.Unmarshal([]byte(jsonStr), &res)
 	if err != nil {
 		fmt.Println("jsoonStr error", err)
+		return nil, err
 	}
 	// fmt.Println("jsonStr====>", res.Logo)
 	// if ; len(jsonStr) > 0 {
@@ -111,12 +118,11 @@ func (gen *GenImage) getQuery(val url.Values) GenQuery {
 	// 	gen.Params.Logo = logo
 	// }
 	gen.Params = res
-	return res
+	return &res, nil
 }
 
-func (gen *GenImage) createImage() *image.RGBA {
+func (gen *GenImage) createImage() (*image.RGBA, error) {
 	params := gen.Params
-	fmt.Println("text====>", params.Title)
 	// gen.params.Date
 	file, _ := os.Open("assets/image/twitter.png")
 	defer file.Close()
@@ -145,7 +151,7 @@ func (gen *GenImage) createImage() *image.RGBA {
 	// assets\fonts\LXGWWenKaiMono-Regular.ttf
 	face, err := loadFont("assets/fonts/LXGWWenKaiMono-Regular.ttf", 32)
 	if err != nil {
-		fmt.Println("laod font error")
+		return nil, err
 	}
 	// textHeight := len(wordWrap(gen.Params.Title, face, maxWidth)) * face.Metrics().Height.Ceil()
 	startX := (params.Size.Width - maxWidth) / 2
@@ -158,7 +164,7 @@ func (gen *GenImage) createImage() *image.RGBA {
 	sy := params.Size.Height - face2.Metrics().Height.Ceil()
 	drawText(bg, params.Date, sx, sy, maxWidth, color.RGBA{0, 0, 0, 200}, face2)
 	// 边框
-	return bg
+	return bg, nil
 }
 
 func parseRGB(rgbStr string) ([]int, error) {
