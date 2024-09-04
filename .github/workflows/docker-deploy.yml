@@ -1,0 +1,119 @@
+# Inspired from https://github.com/actions/starter-workflows/blob/main/pages/nextjs.yml
+name: Build Docker Image
+
+on:
+  push:
+    branches: main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+      
+    outputs:
+      new_version: ${{ steps.increment_version.outputs.new_version }}
+      old_version: ${{ steps.get_version.outputs.old_version}}
+      
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Read current version
+        id: get_version
+        run: |
+          VERSION=$(cat .version)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "::set-output name=old_version::$VERSION"
+
+
+      - name: Increment version
+        id: increment_version
+        run: |
+          VERSION=$(cat .version)
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          patch=$((patch + 1))
+          NEW_VERSION="$major.$minor.$patch"
+          echo "$NEW_VERSION" > .version
+          echo "::set-output name=new_version::$NEW_VERSION"
+          echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
+
+          
+      - name: Build Docker image
+        run: |
+          docker build -t moonhou/hserver:${{ env.NEW_VERSION }} .
+      
+      - name: Save Docker image to tar file
+        run: |
+          docker save moonhou/hserver:${{ env.NEW_VERSION }} -o hserver-v${{ env.NEW_VERSION }}.tar
+      
+      - name: Commit and push version update
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: '.version'
+          message: 'Bump version to ${{ env.NEW_VERSION }}'
+          author_name: 'github-actions'
+          author_email: 'github-actions@github.com'
+
+      - name: Upload Docker image tar file as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: hserver-v${{ env.NEW_VERSION }}.tar
+      
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Docker image tar file
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+      - name: Debug NEW_VERSION in deploy job
+        run: echo "Deploying version ${{ needs.build.outputs.new_version }}"
+
+      - name: Install sshpass
+        run: sudo apt-get install -y openssh-client sshpass 
+      # sshpass -p $SSH_PRIVATE_KEY
+      - name: Add SSH host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          
+      - name: SCP Docker image tar file to server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_PRIVATE_KEY:  ${{ secrets.SERVER_PRIVATE_KEY }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          DEST_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          sshpass -p $SSH_PRIVATE_KEY scp -o StrictHostKeyChecking=no hserver-v${{ needs.build.outputs.new_version }}.tar $SERVER_USER@$SERVER_IP:$DEST_PATH/hserver-v${{ needs.build.outputs.new_version }}.tar
+
+      - name: SSH into server and execute commands
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DEST_PATH: ${{ secrets.SERVER_PATH }}
+          IMG_VERSION: ${{ needs.build.outputs.new_version }}
+          OLD_VERSION: ${{ needs.build.outputs.old_version }}
+        run: |
+          sshpass -p $SSH_PRIVATE_KEY ssh $SERVER_USER@$SERVER_IP << EOF
+              echo "login server successfully"
+              docker load -i ./hserver-v$IMG_VERSION.tar
+              echo "img load successfully"
+              docker stop hserver
+              echo "old server stoped"
+              docker rm hserver
+              echo "rm old container"
+              docker image rm moonhou/hserver:$OLD_VERSION
+              echo "rm old img successfully"
+              docker run -d --name hserver -p 8080:8080 moonhou/hserver:$IMG_VERSION
+              echo "deploy new img successfully"
+              rm hserver-v$IMG_VERSION.tar
+          EOF
+          
+          
