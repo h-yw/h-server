@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HServer</title>
+    <script src="/static/app.js"></script>
+</head>
+<body>
+    <h1>HServer</h1>
+    <div>
+        <p>handlerName: {{.handlerName}}</p>
+        <p>ip: {{.ip}}</p>
+        <div id="preview"></div>
+        <input type="file" name="upload" accept="image/*" multiple onchange="onChange(event)"/>
+        <button onclick="onUpload()">上传</button>
+
+        <form id="form">
+            <input type="text" name="width" placeholder="宽度">
+            <input type="text"  name="height" placeholder="高度">
+        </form>
+        <button onclick="onSubmit()">提交</button>
+    </div>
+    <script>
+        const div  = document.getElementById('preview')
+        const form = document.getElementById('form')
+        let file = null
+        function onChange(event) {
+            {{/*  console.log(event,form)
+            return  */}}
+            files = event.target.files;
+            console.log('files====>',files)
+            Array.from(files).forEach(file=>{
+                const img = document.createElement('img')
+                img.style='width:100px;object-fit:contain'
+                console.log('file====>',file)
+                const url = URL.createObjectURL(file)
+                img.onload = function(){
+                    {{/*  URL.revokeObjectURL(url)  */}}
+                }
+                img.src= url
+                div.appendChild(img)
+            })
+            const url =URL.createObjectURL(file)
+            img.src = url
+        }
+        function onUpload(){
+            // MultipartForm
+            const formData = new FormData()
+            Array.from(files).forEach((file,idx)=>{
+                formData.append(`upload[]`,file)
+            })
+            fetch('http://127.0.0.1:9527/v1/upload',{
+                method:'POST',
+                body:formData
+            }).then(res=>res.json()).then(data=>{
+                console.log(data)
+            })
+        }
+
+        function onSubmit(){
+            const formData = new FormData(form)
+            let data = {
+                width: Number(formData.get('width')),
+                height:Number(formData.get('height'))
+            }
+            if(!data.width || !data.height){
+                alert('请输入宽高')
+                return
+            }
+            fetch('http://127.0.0.1:9527/v1/resize',{
+                method:'POST',
+                body:JSON.stringify(data)
+            }).then(res=>res.json()).then(data=>{
+                console.log(data)
+            })
+        }
+    </script>
+</body>
+</html>

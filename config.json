@@ -1,0 +1,19 @@
+{
+  "app":{
+    "env":"local",
+    "appName":"hounote"
+  },
+  "server": {
+    "protocol": "http",
+    "host": "127.0.0.1",
+    "port": "8080",
+    "logLevel": "info",
+    "logFormat": "json"
+  },
+  "staticServer":{
+    "path":"/static"
+  },
+  "template":{
+    "path":"./templates/*"
+  }
+}
