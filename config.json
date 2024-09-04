@@ -1,7 +1,14 @@
 {
   "app":{
     "env":"local",
-    "appName":"hserver"
+    "appName":"hserver",
+    "version":1
+  },
+  "author":{
+    "name":"houyw",
+    "email":"1327603193@qq.com",
+    "github":"h-yw",
+    "twitter":"Luckydog_H"
   },
   "server": {
     "protocol": "http",
