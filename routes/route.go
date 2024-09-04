@@ -15,6 +15,7 @@ func SetupRoutes(router *gin.Engine) {
 	// router.GET("/", handlers.HomeHandler)
 	v1 := router.Group("/v1")
 	{
+
 		v1.GET("/", handlers.HomeHandler)
 		// v1.GET("/about", handlers.AboutHandler)
 		// v1.GET("/ping", handlers.PingHandler)

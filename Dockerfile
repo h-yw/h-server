@@ -26,6 +26,8 @@ FROM scratch as prod
 COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 COPY --from=builder /go/release/hserver /
 COPY --from=builder /go/release/templates /templates
+
+COPY --from=builder /go/release/assets /assets
 COPY --from=builder /go/release/config.json /config.json
 COPY --from=builder /go/release/log/gin.log /log/gin.log
 
