@@ -17,11 +17,19 @@ WORKDIR /go/release
 ADD . .
 RUN GOOS=linux CGO_ENABLED=0 go build -ldflags="-w -s" -o hserver ./main.go
 
+# 从一个小的基础镜像（如alpine）中提取sh和必要的依赖
+FROM alpine:latest as sh-copy
+RUN mkdir -p /sh
+RUN cp /bin/sh /sh/sh
+
 FROM scratch as prod
 COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 COPY --from=builder /go/release/hserver /
 COPY --from=builder /go/release/templates /templates
-COPY --from=builder /go/release/conf /conf
+COPY --from=builder /go/release/config.json /config.json
+COPY --from=builder /go/release/log/gin.log /log/gin.log
+
+COPY --from=sh-copy /sh/sh /bin/sh
 
 ENV GIN_MODE=release \
     PORT=8080

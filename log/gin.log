@@ -5,8 +5,8 @@
  - using code:	gin.SetMode(gin.ReleaseMode)
 
 [GIN-debug] Loaded HTML Templates (2): 
-	- index.html
 	- 
+	- index.html
 
 [GIN-debug] GET    /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
 [GIN-debug] HEAD   /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
@@ -21,4 +21,3 @@
 [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
 Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
 [GIN-debug] Listening and serving HTTP on 127.0.0.1:8080
-[GIN] 2024/09/04 - 13:19:29 | 200 |    172.3984ms |       127.0.0.1 | GET      "/v1/image.png?jsonStr={%22title%22:%22this%20is%20test%22,%22logo%22:%22https://hlovez.life/static/favicons/favicon-32x32.png%22,%22date%22:%222024/09/01%22,%22size%22:{%22width%22:800,%22height%22:320}}"

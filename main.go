@@ -21,7 +21,7 @@ func main() {
 	// 初始化配置
 	bootstrap.InitializeConfig()
 	f, _ := os.Create("log/gin.log")
-	gin.DefaultWriter = io.MultiWriter(f)
+	gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 
 	r := gin.Default()
 	// staticPath := wd + "/test"
