@@ -11,6 +11,22 @@ type WXTextMsg struct {
 	MsgId        int64
 }
 
+type WXNewsArticle struct {
+	Title       string
+	Description string
+	PicUrl      string
+	Url         string
+}
+type WXNewsReply struct {
+	ToUserName   string
+	FromUserName string
+	CreateTime   int64
+	MsgType      string
+	ArticleCount int
+	Articles     []WXNewsArticle
+	XMLName      xml.Name `xml:"xml"`
+}
+
 type WXTextReply struct {
 	ToUserName   string
 	FromUserName string
