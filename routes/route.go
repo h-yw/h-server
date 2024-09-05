@@ -23,6 +23,7 @@ func SetupRoutes(router *gin.Engine) {
 		// v1.POST("/resize", handlers.ResizeHandler)
 		// v1.POST("/upload", handlers.UploadHandler)
 		// v1.GET("/puser", handlers.PuserHandler)
+		v1.GET("/wx", handlers.WeixinHandler)
 		v1.GET("/image.png", handlers.ImageHandler)
 	}
 	// 添加更多路由和处理函数
