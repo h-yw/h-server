@@ -38,7 +38,4 @@ func WeixinHandler(c *gin.Context) {
 			c.String(http.StatusOK, "")
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-	})
 }
