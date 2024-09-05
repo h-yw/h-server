@@ -23,8 +23,8 @@ type WXNewsReply struct {
 	CreateTime   int64
 	MsgType      string
 	ArticleCount int
-	Articles     []WXNewsArticle
-	XMLName      xml.Name `xml:"xml"`
+	Articles     []WXNewsArticle `xml:"Articles>item,omitempty"`
+	XMLName      xml.Name        `xml:"xml"`
 }
 
 type WXTextReply struct {
