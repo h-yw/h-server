@@ -54,14 +54,26 @@ func WXMsgReceive(c *gin.Context) {
 }
 
 func WXMsgReply(c *gin.Context, fromUser, toUser string) {
-	replyTextMsg := models.WXTextReply{
+	replyTextMsg := models.WXNewsReply{
 		ToUserName:   toUser,
 		FromUserName: fromUser,
 		CreateTime:   time.Now().Unix(),
-		MsgType:      "text",
-		Content: fmt.Sprintf(`
-		欢迎你的到来，我可以为你提供一些信息:
-		当前时间: %s`, time.Now().Format("2006-01-02 15:04:05")),
+		MsgType:      "news",
+		ArticleCount: 2,
+		Articles: []models.WXNewsArticle{
+			{
+				Title:       "欢迎访问博客",
+				Description: "欢迎访问博客",
+				PicUrl:      "https://hlovez.life/static/favicons/logo_800x320.png",
+				Url:         "https://hlovez.life",
+			},
+			{
+				Title:       "使用 GitHub Actions 自动构建和部署 Docker 镜像",
+				Description: "欢迎访问博客",
+				PicUrl:      "https://mmbiz.qpic.cn/sz_mmbiz_jpg/bQibWia0UpTvJqJIJlwUhibsB04k9sg27ZhXVahPdW3O4HDASrGzPVSoxzYfJZSMAibsZ3cNuhGo3X2EkXMVdU85rQ/0?wx_fmt=jpeg",
+				Url:         "https://mp.weixin.qq.com/s/Y6mQZD9VxZNMWznQbeoFxA?token=301568447&lang=zh_CN",
+			},
+		},
 	}
 	msg, err := xml.Marshal(replyTextMsg)
 	if err != nil {
