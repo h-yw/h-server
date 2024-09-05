@@ -3,15 +3,19 @@ package handlers
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/xml"
 	"fmt"
+	"hserver/models"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func WeixinHandler(c *gin.Context) {
+func WXCheckSign(c *gin.Context) {
 	token := "houyw"
 	signature := c.DefaultQuery("signature", "")
 	timestamp := c.DefaultQuery("timestamp", "")
@@ -38,4 +42,31 @@ func WeixinHandler(c *gin.Context) {
 			c.String(http.StatusOK, "")
 		}
 	}
+}
+func WXMsgReceive(c *gin.Context) {
+	var textMsg models.WXTextMsg
+	err := c.ShouldBindXML(&textMsg)
+	if err != nil {
+		log.Printf("[消息接收] - XML数据包解析失败: %v\n", err)
+	}
+	log.Printf("[消息接收] - 收到消息, 消息类型为: %s, 消息内容为: %s\n", textMsg.MsgType, textMsg.Content)
+	WXMsgReply(c, textMsg.ToUserName, textMsg.FromUserName)
+}
+
+func WXMsgReply(c *gin.Context, fromUser, toUser string) {
+	replyTextMsg := models.WXTextReply{
+		ToUserName:   toUser,
+		FromUserName: fromUser,
+		CreateTime:   time.Now().Unix(),
+		MsgType:      "text",
+		Content: fmt.Sprintf(`
+		欢迎你的到来，我可以为你提供一些信息:
+		当前时间: %s`, time.Now().Format("2006-01-02 15:04:05")),
+	}
+	msg, err := xml.Marshal(replyTextMsg)
+	if err != nil {
+		log.Printf("[消息回复] - 将对象进行XML编码出错: %v\n", err)
+
+	}
+	_, _ = c.Writer.Write(msg)
 }
