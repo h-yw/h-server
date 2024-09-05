@@ -30,7 +30,7 @@ func WeixinHandler(c *gin.Context) {
 		hash := sha1.New()
 		hash.Write([]byte(concatenated))
 		hashCode := hex.EncodeToString(hash.Sum(nil))
-		fmt.Printf("handle/GET func: hashcode, signature: %s, %s\n", hashcode, signature)
+		fmt.Printf("handle/GET func: hashcode, signature: %s, %s\n", hashCode, signature)
 
 		if hashCode == signature {
 			c.String(http.StatusOK, echostr)
