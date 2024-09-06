@@ -98,7 +98,7 @@ func WXMsgReceive(c *gin.Context) {
 }
 
 func WXNewsReply(c *gin.Context, fromUser, toUser string, content string) {
-	defaultStr := "🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎来到ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻<a href=\"https://hlovez.life\">hlovez.life</a>\n\n功能列表：\n\t\t<span style=\"color:#167829\">翻译：</span>\n\t\t\t\t输入例子：\n\t\t\t\t\t\t[trans]这是要翻译的内容"
+	defaultStr := "🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎来到ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻<a href=\"https://hlovez.life\">hlovez.life</a>\n\n功能列表：\n\t\t<a href=\"#\" style=\"color:#167829\">翻译：</a>\n\t\t\t\t输入例子：\n\t\t\t\t\t\t[trans]这是要翻译的内容"
 	if content != "" {
 		defaultStr = content
 	}
@@ -124,7 +124,7 @@ func WXSubscribeReply(c *gin.Context, fromUser, toUser string) {
 		FromUserName: fromUser,
 		CreateTime:   time.Now().Unix(),
 		MsgType:      models.WXMsgTypeText,
-		Content:      fmt.Sprintf("🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎关注ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻%s\n功能列表：\n\t\t<span style=\"color:#167829\">翻译</span>：\n\t\t\t\t输入例子：\n\t\t\t\t\t\t[trans]这是要翻译的内容", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
+		Content:      fmt.Sprintf("🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎关注ifcat🐱！这里将会发布一些技术文章，摄影作品等。\n当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻%s\n功能列表：\n\t\t<a href=\"#\" style=\"color:#167829\">翻译</a>：\n\t\t\t\t输入例子：\n\t\t\t\t\t\t[trans]这是要翻译的内容", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
 	}
 	msg, err := xml.Marshal(replyTextMsg)
 	if err != nil {
@@ -155,7 +155,7 @@ func translate(content string) *string {
 	return &trans
 }
 func splitText(str string) (*models.Feature, error) {
-	re := regexp.MustCompile(`(\[.*?\])(.*)`)
+	re := regexp.MustCompile(`(?s)(\[.*?\])(.*)`)
 	matches := re.FindStringSubmatch(str)
 	if len(matches) == 0 {
 		return nil, fmt.Errorf("未匹配到featureFlag\n")
@@ -177,7 +177,7 @@ func featureHandle(feature *models.Feature) string {
 	switch feature.Flag {
 	case string(models.FlagTrans):
 		val := translate(feature.Value.(string))
-		content = fmt.Sprintf("[翻译结果]\n %s", *val)
+		content = fmt.Sprintf("[翻译结果]\n\n %s", *val)
 	default:
 		log.Printf("[featureHandle] - 未定义的feature: %v\n", feature.Flag)
 		content = ""
