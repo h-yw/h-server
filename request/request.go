@@ -2,6 +2,7 @@ package request
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"log"
@@ -140,6 +141,9 @@ func NewRequest(baseUrl string) *requestCreate {
 		BaseURL: "https://api.weixin.qq.com/cgi-bin/",
 		Client: &http.Client{
 			Timeout: time.Second * 10,
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
 		},
 		attempts: 3,
 	}

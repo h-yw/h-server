@@ -98,7 +98,7 @@ func WXMsgReceive(c *gin.Context) {
 }
 
 func WXNewsReply(c *gin.Context, fromUser, toUser string, content string) {
-	defaultStr := "🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎来到ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻<a href=\"https://hlovez.life\">hlovez.life</a>\n\n功能列表：\t\t翻译：\n\t\t\t\t输入例子：[trans]这是要翻译的内容"
+	defaultStr := "🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎来到ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻<a href=\"https://hlovez.life\">hlovez.life</a>\n\n功能列表：\n\t\t<span style=\"color:#167829\">翻译：</span>\n\t\t\t\t输入例子：\n\t\t\t\t\t\t[trans]这是要翻译的内容"
 	if content != "" {
 		defaultStr = content
 	}
@@ -124,7 +124,7 @@ func WXSubscribeReply(c *gin.Context, fromUser, toUser string) {
 		FromUserName: fromUser,
 		CreateTime:   time.Now().Unix(),
 		MsgType:      models.WXMsgTypeText,
-		Content:      fmt.Sprintf("🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎关注ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻%s\n功能列表：\t\t翻译：\n\t\t\t\t输入例子：[trans]这是要翻译的内容", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
+		Content:      fmt.Sprintf("🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎关注ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻%s\n功能列表：\n\t\t<span style=\"color:#167829\">翻译</span>：\n\t\t\t\t输入例子：\n\t\t\t\t\t\t[trans]这是要翻译的内容", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
 	}
 	msg, err := xml.Marshal(replyTextMsg)
 	if err != nil {
