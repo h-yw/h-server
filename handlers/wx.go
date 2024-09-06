@@ -75,9 +75,8 @@ func WXMsgReceive(c *gin.Context) {
 		var textMsg models.WXTextMsg
 		if err := xml.Unmarshal(body, &textMsg); err != nil {
 			log.Printf("[消息接收][textMsg] - 解析文本消息失败: %v\n", err)
-			WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
-			return
 		}
+		WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
 	}
 	// err := c.ShouldBindXML(&textMsg)
 	// if err != nil {
@@ -93,7 +92,7 @@ func WXNewsReply(c *gin.Context, fromUser, toUser string) {
 		FromUserName: fromUser,
 		CreateTime:   time.Now().Unix(),
 		MsgType:      models.WXMsgTypeText,
-		Content:      "欢迎来到ifcat！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复。\n 你也可以去看我的博客：<a href=\"https://hlovez.life\">hlovez.life</a>",
+		Content:      "<img style=\"width:360;height:200;object-fit:contain\" src=\"https://hlovez.life/static/favicons/logo_800x320.png\"></img>\n欢迎来到ifcat！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复。\n你也可以去看我的博客：<a href=\"https://hlovez.life\">hlovez.life</a>",
 	}
 	msg, err := xml.Marshal(replyTextMsg)
 	if err != nil {
@@ -110,7 +109,7 @@ func WXSubscribeReply(c *gin.Context, fromUser, toUser string) {
 		FromUserName: fromUser,
 		CreateTime:   time.Now().Unix(),
 		MsgType:      models.WXMsgTypeText,
-		Content:      fmt.Sprintf("欢迎关注ifcat！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复。\n 你也可以去看我的博客：%s", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
+		Content:      fmt.Sprintf("欢迎关注ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客%s", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
 	}
 	msg, err := xml.Marshal(replyTextMsg)
 	if err != nil {
