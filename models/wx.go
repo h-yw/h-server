@@ -1,6 +1,8 @@
 package models
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 type EventType string
 type WXMsgType string
@@ -18,6 +20,17 @@ const (
 	WXMsgTypeLocation   WXMsgType = "location"
 	WXMsgTypeEvent      WXMsgType = "event"
 )
+
+type FeatureFlag string
+
+const (
+	FlagTrans FeatureFlag = "[trans]"
+)
+
+type Feature struct {
+	Flag  string
+	Value interface{}
+}
 
 type WXReceive struct {
 	ToUserName   string

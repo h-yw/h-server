@@ -6,8 +6,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"hserver/models"
+	"hserver/request"
+	"hserver/utils"
 	"log"
 	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -54,7 +57,7 @@ func WXMsgReceive(c *gin.Context) {
 	var rawMsg models.WXReceive
 	if err := xml.Unmarshal(body, &rawMsg); err != nil {
 		log.Printf("[消息接收][rawMsg] - XML数据包解析失败: %v\n", err)
-		WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
+		WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName, "")
 		return
 	}
 	switch rawMsg.MsgType {
@@ -62,7 +65,7 @@ func WXMsgReceive(c *gin.Context) {
 		var eventMsg models.WXEventMsg
 		if err := xml.Unmarshal(body, &eventMsg); err != nil {
 			log.Printf("[消息接收][eventMsg] - 解析文本消息失败: %v\n", err)
-			WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
+			WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName, "")
 			return
 		}
 		log.Printf("[消息接收] - 接收到事件消息: %v\n%v\n", eventMsg.Event, models.EventTypeSubscribe)
@@ -73,10 +76,18 @@ func WXMsgReceive(c *gin.Context) {
 		return
 	case models.WXMsgTypeText:
 		var textMsg models.WXTextMsg
+		var str string = ""
 		if err := xml.Unmarshal(body, &textMsg); err != nil {
 			log.Printf("[消息接收][textMsg] - 解析文本消息失败: %v\n", err)
 		}
-		WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
+		feature, err := splitText(textMsg.Content)
+		if err != nil {
+			log.Printf("[消息接收] - 解析feature失败: %v\n", err)
+		} else {
+			str = featureHandle(feature)
+		}
+
+		WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName, str)
 	}
 	// err := c.ShouldBindXML(&textMsg)
 	// if err != nil {
@@ -86,13 +97,17 @@ func WXMsgReceive(c *gin.Context) {
 
 }
 
-func WXNewsReply(c *gin.Context, fromUser, toUser string) {
+func WXNewsReply(c *gin.Context, fromUser, toUser string, content string) {
+	defaultStr := "🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎来到ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻<a href=\"https://hlovez.life\">hlovez.life</a>\n\n功能列表：\t\t翻译：\n\t\t\t\t输入例子：[trans]这是要翻译的内容"
+	if content != "" {
+		defaultStr = content
+	}
 	replyTextMsg := models.WXTextReply{
 		ToUserName:   toUser,
 		FromUserName: fromUser,
 		CreateTime:   time.Now().Unix(),
 		MsgType:      models.WXMsgTypeText,
-		Content:      "🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎来到ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻<a href=\"https://hlovez.life\">hlovez.life</a>",
+		Content:      defaultStr,
 	}
 	msg, err := xml.Marshal(replyTextMsg)
 	if err != nil {
@@ -109,7 +124,7 @@ func WXSubscribeReply(c *gin.Context, fromUser, toUser string) {
 		FromUserName: fromUser,
 		CreateTime:   time.Now().Unix(),
 		MsgType:      models.WXMsgTypeText,
-		Content:      fmt.Sprintf("🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎关注ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻%s", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
+		Content:      fmt.Sprintf("🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉\n欢迎关注ifcat🐱！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复😁。\n你也可以去看我的博客💻%s\n功能列表：\t\t翻译：\n\t\t\t\t输入例子：[trans]这是要翻译的内容", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
 	}
 	msg, err := xml.Marshal(replyTextMsg)
 	if err != nil {
@@ -117,4 +132,55 @@ func WXSubscribeReply(c *gin.Context, fromUser, toUser string) {
 
 	}
 	_, _ = c.Writer.Write(msg)
+}
+
+func translate(content string) *string {
+	var trans string
+	req := request.NewRequest("https://api.weixin.qq.com/cgi-bin/")
+	lang := utils.AutoCheckLang(&content)
+	log.Printf("[translate] - 翻译前: %v\n", lang)
+	res, _ := req.Post(request.PostParams{
+		Url: "media/voice/translatecontent",
+		Query: map[string]string{
+			// "access_token": token,
+			"lfrom": lang.From,
+			"lto":   lang.To,
+		},
+		Body: content,
+	})
+	log.Printf("[translate] - 翻译后: %v\n", res.Data)
+	if val, exits := res.Data["to_content"]; exits {
+		trans = val.(string)
+	}
+	return &trans
+}
+func splitText(str string) (*models.Feature, error) {
+	re := regexp.MustCompile(`(\[.*?\])(.*)`)
+	matches := re.FindStringSubmatch(str)
+	if len(matches) == 0 {
+		return nil, fmt.Errorf("未匹配到featureFlag\n")
+	}
+	var feature models.Feature
+	log.Printf("[splitText] - featureFlag: %v, featureValue: %v\n", matches[1], matches[2])
+	if val := matches[1]; len(val) > 0 {
+		feature.Flag = val
+	}
+	if val := matches[2]; len(val) > 0 {
+		feature.Value = val
+	}
+	return &feature, nil
+}
+
+// 实现feature功能
+func featureHandle(feature *models.Feature) string {
+	var content string
+	switch feature.Flag {
+	case string(models.FlagTrans):
+		val := translate(feature.Value.(string))
+		content = fmt.Sprintf("[翻译结果]\n %s", *val)
+	default:
+		log.Printf("[featureHandle] - 未定义的feature: %v\n", feature.Flag)
+		content = ""
+	}
+	return content
 }
