@@ -44,36 +44,73 @@ func WXCheckSign(c *gin.Context) {
 	}
 }
 func WXMsgReceive(c *gin.Context) {
-	var textMsg models.WXTextMsg
-	err := c.ShouldBindXML(&textMsg)
+	// c.ShouldBindXML() 只能读一次
+	// 获取原始请求体
+	body, err := c.GetRawData()
 	if err != nil {
-		log.Printf("[消息接收] - XML数据包解析失败: %v\n", err)
+		log.Printf("[消息接收] - 获取原始数据失败: %v\n", err)
+		return
 	}
-	log.Printf("[消息接收] - 收到消息, 消息类型为: %s, 消息内容为: %s\n", textMsg.MsgType, textMsg.Content)
-	WXMsgReply(c, textMsg.ToUserName, textMsg.FromUserName)
+	var rawMsg models.WXReceive
+	if err := xml.Unmarshal(body, &rawMsg); err != nil {
+		log.Printf("[消息接收][rawMsg] - XML数据包解析失败: %v\n", err)
+		WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
+		return
+	}
+	switch rawMsg.MsgType {
+	case models.WXMsgTypeEvent:
+		var eventMsg models.WXEventMsg
+		if err := xml.Unmarshal(body, &eventMsg); err != nil {
+			log.Printf("[消息接收][eventMsg] - 解析文本消息失败: %v\n", err)
+			WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
+			return
+		}
+		log.Printf("[消息接收] - 接收到事件消息: %v\n%v\n", eventMsg.Event, models.EventTypeSubscribe)
+		if eventMsg.Event == string(models.EventTypeSubscribe) {
+			log.Printf("[消息接收] - 接收到关注事件消息: %v\n", eventMsg.Event)
+			WXSubscribeReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
+		}
+		return
+	case models.WXMsgTypeText:
+		var textMsg models.WXTextMsg
+		if err := xml.Unmarshal(body, &textMsg); err != nil {
+			log.Printf("[消息接收][textMsg] - 解析文本消息失败: %v\n", err)
+			WXNewsReply(c, rawMsg.ToUserName, rawMsg.FromUserName)
+			return
+		}
+	}
+	// err := c.ShouldBindXML(&textMsg)
+	// if err != nil {
+	// 	log.Printf("[消息接收] - XML数据包解析失败: %v\n", err)
+	// }
+	// log.Printf("[消息接收] - 收到消息, 消息类型为: %s, 消息内容为: %s\n", textMsg.MsgType, textMsg.Content)
+
 }
 
-func WXMsgReply(c *gin.Context, fromUser, toUser string) {
-	replyTextMsg := models.WXNewsReply{
+func WXNewsReply(c *gin.Context, fromUser, toUser string) {
+	replyTextMsg := models.WXTextReply{
 		ToUserName:   toUser,
 		FromUserName: fromUser,
 		CreateTime:   time.Now().Unix(),
-		MsgType:      "news",
-		ArticleCount: 2,
-		Articles: []models.WXNewsArticle{
-			{
-				Title:       "欢迎访问博客",
-				Description: "欢迎访问博客",
-				PicUrl:      "https://hlovez.life/static/favicons/logo_800x320.png",
-				Url:         "https://hlovez.life",
-			},
-			{
-				Title:       "使用 GitHub Actions 自动构建和部署 Docker 镜像",
-				Description: "欢迎访问博客",
-				PicUrl:      "https://mmbiz.qpic.cn/sz_mmbiz_jpg/bQibWia0UpTvJqJIJlwUhibsB04k9sg27ZhXVahPdW3O4HDASrGzPVSoxzYfJZSMAibsZ3cNuhGo3X2EkXMVdU85rQ/0?wx_fmt=jpeg",
-				Url:         "https://mp.weixin.qq.com/s/Y6mQZD9VxZNMWznQbeoFxA?token=301568447&lang=zh_CN",
-			},
-		},
+		MsgType:      models.WXMsgTypeText,
+		Content:      "欢迎来到ifcat！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复。\n 你也可以去看我的博客：<a href=\"https://hlovez.life\">hlovez.life</a>",
+	}
+	msg, err := xml.Marshal(replyTextMsg)
+	if err != nil {
+		log.Printf("[消息回复] - 将对象进行XML编码出错: %v\n", err)
+
+	}
+	_, _ = c.Writer.Write(msg)
+}
+
+func WXSubscribeReply(c *gin.Context, fromUser, toUser string) {
+
+	replyTextMsg := models.WXTextReply{
+		ToUserName:   toUser,
+		FromUserName: fromUser,
+		CreateTime:   time.Now().Unix(),
+		MsgType:      models.WXMsgTypeText,
+		Content:      fmt.Sprintf("欢迎关注ifcat！这里将会发布一些技术文章，摄影作品等。当然，你也可以留言，我会回复。\n 你也可以去看我的博客：%s", "<a href=\"https://hlovez.life\">hlovez.life</a>"),
 	}
 	msg, err := xml.Marshal(replyTextMsg)
 	if err != nil {
