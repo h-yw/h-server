@@ -60,6 +60,7 @@ func (r *requestCreate) Get(params GetParams) (*RequestRes, error) {
 			req.Header.Add(k, v)
 		}
 	}
+	r.Client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	resp, err := r.Client.Do(req)
 	if err != nil {
 		log.Printf("sending request: %v", err)
@@ -110,6 +111,8 @@ func (r *requestCreate) Post(params PostParams) (*RequestRes, error) {
 			req.Header.Add(k, v)
 		}
 	}
+
+	r.Client.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	resp, err := r.Client.Do(req)
 	if err != nil {
 		log.Printf("sending request: %v", err)
@@ -166,7 +169,10 @@ func GetAccessToken() {
 
 // 直接使用NewRequest引起循环引用，
 func getAccessToken() (string, time.Time) {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout:   time.Second * 10,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+	}
 
 	reqUrl, err := url.Parse("https://api.weixin.qq.com/cgi-bin/token")
 	if err != nil {
